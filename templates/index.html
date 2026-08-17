@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homelab PDF Tools</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; display: flex; justify-content: center; margin: 0; }
+        .container { max-width: 600px; width: 100%; }
+        h1 { text-align: center; color: #38bdf8; margin-bottom: 2rem; }
+        
+        .grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+        @media (min-width: 768px) { .grid { grid-template-columns: 1fr 1fr; } }
+        
+        .card { background: #1e293b; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid #334155; }
+        .card h2 { margin-top: 0; font-size: 1.1rem; color: #94a3b8; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 8px; }
+        
+        input[type="password"], input[type="number"] { width: 100%; padding: 0.6rem; margin-bottom: 1rem; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; box-sizing: border-box; }
+        .row { display: flex; gap: 10px; }
+        
+        button { width: 100%; padding: 0.75rem; background: #0284c7; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover:not(:disabled) { background: #0369a1; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-upload { background: #334155; color: #f8fafc; width: 100%; padding: 0.75rem; border: 1px dashed #64748b; border-radius: 6px; cursor: pointer; text-align: center; transition: 0.2s; display: block; margin-bottom: 0.5rem; font-weight: normal; box-sizing: border-box; }
+        .btn-upload:hover { background: #475569; border-color: #94a3b8; }
+        input[type="file"] { display: none; } /* Ocultar el input nativo */
+
+        .file-name-display { color: #38bdf8; font-size: 0.85rem; margin-bottom: 1rem; display: block; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .file-list { list-style: none; padding: 0; margin: 0 0 1rem 0; font-size: 0.85rem; }
+        .file-list li { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 10px; border-radius: 6px; margin-bottom: 5px; border: 1px solid #334155; }
+        .file-list span.name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%; color: #38bdf8; }
+        .file-list span.remove { color: #ef4444; cursor: pointer; font-weight: bold; padding: 0 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛠️ Herramientas PDF</h1>
+        
+        <div class="grid">
+
+            <div class="card">
+                <h2>📄 Office a PDF</h2>
+                <form action="/office2pdf" method="POST" enctype="multipart/form-data">
+                    <label class="btn-upload">
+                        <input type="file" name="doc_file" accept=".doc,.docx,.odt,.rtf,.txt,.xls,.xlsx,.ods,.csv,.ppt,.pptx,.odp" required onchange="document.getElementById('office-name').textContent = this.files[0] ? this.files[0].name : 'Ningún archivo seleccionado'">
+                        ➕ Seleccionar Documento
+                    </label>
+                    <span id="office-name" class="file-name-display">Ningún archivo seleccionado</span>
+                    <button type="submit">Convertir a PDF</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>📁 Unir PDFs</h2>
+                <label class="btn-upload">
+                    <input type="file" id="pdfPicker" accept=".pdf,application/pdf" multiple>
+                    ➕ Seleccionar o agregar PDFs
+                </label>
+                <ul id="pdfList" class="file-list"></ul>
+                <form id="mergeForm">
+                    <button type="submit" id="btnMerge" disabled>Unir y Descargar (0)</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>🖼️ Imágenes a PDF</h2>
+                <label class="btn-upload">
+                    <input type="file" id="imgPicker" accept="image/png, image/jpeg" multiple>
+                    ➕ Seleccionar o agregar imágenes
+                </label>
+                <ul id="imgList" class="file-list"></ul>
+                <form id="imgForm">
+                    <button type="submit" id="btnImg" disabled>Convertir a PDF (0)</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>✂️ Extraer Páginas</h2>
+                <form action="/split" method="POST" enctype="multipart/form-data">
+                    <label class="btn-upload">
+                        <input type="file" name="pdf_file" accept=".pdf,application/pdf" required onchange="document.getElementById('split-name').textContent = this.files[0] ? this.files[0].name : 'Ningún archivo seleccionado'">
+                        ➕ Seleccionar PDF
+                    </label>
+                    <span id="split-name" class="file-name-display">Ningún archivo seleccionado</span>
+                    
+                    <div class="row">
+                        <input type="number" name="start" placeholder="Desde pág." value="1" min="1" required>
+                        <input type="number" name="end" placeholder="Hasta pág." value="1" min="1" required>
+                    </div>
+                    <button type="submit">Extraer</button>
+                </form>
+            </div>
+
+            <!-- TARJETA 5: PROTEGER PDF -->
+            <div class="card">
+                <h2>🔒 Proteger PDF</h2>
+                <form action="/protect" method="POST" enctype="multipart/form-data">
+                    <label class="btn-upload">
+                        <input type="file" name="pdf_file" accept=".pdf,application/pdf" required onchange="document.getElementById('protect-name').textContent = this.files[0] ? this.files[0].name : 'Ningún archivo seleccionado'">
+                        ➕ Seleccionar PDF
+                    </label>
+                    <span id="protect-name" class="file-name-display">Ningún archivo seleccionado</span>
+                    
+                    <input type="password" name="password" placeholder="Contraseña de apertura" required>
+                    <button type="submit">Proteger</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function setupAccumulator(pickerId, listId, formId, btnId, fileTypeChecker, uploadParam, endpoint, successName) {
+            let filesArray = [];
+            const picker = document.getElementById(pickerId);
+            const list = document.getElementById(listId);
+            const form = document.getElementById(formId);
+            const btn = document.getElementById(btnId);
+            const minRequired = pickerId === 'pdfPicker' ? 2 : 1; 
+
+            picker.addEventListener('change', () => {
+                Array.from(picker.files).forEach(file => {
+                    if (fileTypeChecker(file)) {
+                        filesArray.push(file);
+                    } else {
+                        alert(`El archivo "${file.name}" no tiene un formato válido para esta acción.`);
+                    }
+                });
+                picker.value = ''; 
+                updateUI();
+            });
+
+            window['remove' + pickerId] = function(index) {
+                filesArray.splice(index, 1);
+                updateUI();
+            };
+
+            function updateUI() {
+                list.innerHTML = '';
+                filesArray.forEach((file, idx) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span class="name">${idx + 1}. ${file.name}</span>
+                        <span class="remove" onclick="remove${pickerId}(${idx})">✕</span>
+                    `;
+                    list.appendChild(li);
+                });
+
+                if (filesArray.length >= minRequired) {
+                    btn.disabled = false;
+                    btn.textContent = `Procesar y Descargar (${filesArray.length})`;
+                } else {
+                    btn.disabled = true;
+                    btn.textContent = `Faltan archivos (Min: ${minRequired})`;
+                }
+            }
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (filesArray.length < minRequired) return;
+
+                const formData = new FormData();
+                filesArray.forEach(file => formData.append(uploadParam, file));
+
+                const originalText = btn.textContent;
+                btn.textContent = "Procesando...";
+                btn.disabled = true;
+
+                fetch(endpoint, { method: 'POST', body: formData })
+                .then(res => {
+                    if (!res.ok) throw new Error("Error en el servidor");
+                    return res.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = successName;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                })
+                .catch(err => {
+                    alert("Ocurrió un error. Verifica que los archivos no estén corruptos o sean demasiado pesados.");
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                });
+            });
+        }
+
+        setupAccumulator(
+            'pdfPicker', 'pdfList', 'mergeForm', 'btnMerge', 
+            (f) => f.name.toLowerCase().endsWith('.pdf'), 
+            'pdf_files', '/merge', 'pdf_unidos.pdf'
+        );
+
+        setupAccumulator(
+            'imgPicker', 'imgList', 'imgForm', 'btnImg', 
+            (f) => f.name.toLowerCase().match(/\.(jpg|jpeg|png)$/), 
+            'images', '/img2pdf', 'imagenes_convertidas.pdf'
+        );
+    </script>
+</body>
+</html>

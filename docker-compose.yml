@@ -1,0 +1,11 @@
+services:
+  pdf-tools:
+    build: .
+    container_name: pdf-tools
+    restart: unless-stopped
+    ports:
+      - "5050:5000"
+    deploy:
+      resources:
+        limits:
+          memory: 450M
